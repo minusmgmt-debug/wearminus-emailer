@@ -87,7 +87,7 @@ async function sendEmailWithPDF(email, answers, plan) {
   const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
   // Send via Resend
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = new Resend(process.env.re_7ojhr7nU_Fuvy6xtMAqUanw6CtKA58wLP);
   await resend.emails.send({
     from: "no-reply@wearminus.com", // 👈 nobody can reply
     to: email,
