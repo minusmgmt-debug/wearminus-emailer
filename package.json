@@ -1,0 +1,9 @@
+{
+  "name": "wearminus-emailer",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "resend": "^3.2.0"
+  }
+}
