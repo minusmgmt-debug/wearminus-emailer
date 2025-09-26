@@ -2,15 +2,28 @@ import { Resend } from "resend";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 export default async function handler(req, res) {
+  // ✅ Allow CORS (important so Shopify frontend can call this)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end(); // Handles preflight request
+  }
+
   try {
-    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
     const { email, firstName, plan } = req.body || {};
-    if (!email || !plan) return res.status(400).json({ error: "Missing email or plan" });
+    if (!email || !plan) {
+      return res.status(400).json({ error: "Missing email or plan" });
+    }
 
-    // 1. Create PDF dynamically
+    // ✅ Create personalized PDF
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595, 842]); // A4
+    const page = pdfDoc.addPage([595, 842]); // A4 size
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     let y = 780;
 
@@ -32,25 +45,26 @@ export default async function handler(req, res) {
     const pdfBytes = await pdfDoc.save();
     const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
-    // 2. Send email via Resend
+    // ✅ Send email with PDF
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: "WearMinus <plan@wearminus.com>", // later replace with your verified domain
+      // ⚠️ For now use Resend’s test domain
+      from: "onboarding@resend.dev",
       to: email,
       subject: "Your Personalized Fat Loss Plan",
       html: `
         <p>Hi ${firstName || "there"},</p>
-        <p>Attached is your 30-day fat loss plan (PDF).</p>
-        <p>You’ve got this! 💪<br/>— WearMinus</p>
+        <p>Attached is your 30-day fat loss plan (PDF), generated from your quiz results.</p>
+        <p>You’ve got this! 💪<br/>— WearMinus Team</p>
       `,
       attachments: [
         { filename: "FatLossPlan.pdf", content: pdfBase64 }
       ]
     });
 
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, message: "Email sent with PDF" });
   } catch (err) {
-    console.error(err);
+    console.error("Error sending email:", err);
     return res.status(500).json({ error: "Failed to send PDF" });
   }
 }
